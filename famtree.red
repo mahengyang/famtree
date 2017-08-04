@@ -10,13 +10,11 @@ edge: 24
 gap: 24
 word-gap: 5
 word-width: 24
-word-heigth: 24 ;20号字体，大小约为24px
+word-height: 24 ;20号字体，大小约为24px
 half-word-width: word-width / 2
-default-line-heigth: 10
+default-line-height: 10
 default-line-width: 2
 small: make font! [size: 20 name: "Consolas" style: 'bold]
-base-x: width / 2
-base-y: 10
 
 node1: object [
 	father: "马中新"
@@ -75,8 +73,8 @@ foreach node nodes [
 append my-draw compose [font small]
 append my-draw compose [line-width (default-line-width) pen blue]
 
-no-sun: function [user-name] [
-	user: select users user-name
+no-sun: function [username] [
+	user: select users username
 	either user = none [true] [false]
 ]
 
@@ -93,89 +91,103 @@ calculate-x: function [grid] [
 	grid * gap - half-word-width + edge
 ]
 
-; 两个字的名字中间加一个空格
-format-name: function [name] [
-	number: length? name
-	either number = 2 
-		[ rejoin [first name " " second name] ]
-		[ name ]
+; 计算竖向格子的上边界坐标 上下两根竖线，字间距加字高，再加边距
+; grid-y 距离上边界的格子数
+calculate-y: function [grid-y] [
+	(grid-y - 1) * calculate-y-grid-height + edge
+]
+; 计算竖向格子的长度
+calculate-y-grid-height: function [] [
+	word-count: 3
+	(default-line-height * 2) + ((word-gap + word-height) * word-count)
 ]
 
-draw-all: function [user-name grid y tab] [
-	append tab " "
-	append tab " "
-	print [tab "函数开始" user-name "grid:" grid "y:" y]
-	user: select users user-name
-	
-	sun-y: y
-	foreach w user-name [
-		sun-y: sun-y + word-heigth + word-gap
-	]
-	sun-y: sun-y + (default-line-heigth * 2) + word-gap
+calculate-middle-grid: function [left-grid right-grid] [
+	left-grid + ((right-grid - left-grid) / 2)
+]
 
-	first-grid: grid
-	last-grid: grid
+; 先画后代，再画父代
+; username 节点名字
+; grid-x x格子数
+; grid-y y格子数
+; tab 日志缩进
+; height 高度
+draw-all: function [username grid-x grid-y tab height] [
+	append tab "  "
+	print [tab "函数开始" username "grid:" grid-x "y:" grid-y]
+	user: select users username
+	
+	sun-grid-y: grid-y + 1
+	first-grid: grid-x
+	last-grid: grid-x
 	i: 1
 	foreach sun user/suns [
-		append tab " "
-		append tab " "
-		vline-x: calculate-x grid
-		print [tab "foreach" sun " cur" grid  "  first" first-grid "  last" last-grid]
+		append tab "  "
+		vline-x: calculate-x grid-x
+		print [tab "foreach" sun " cur" grid-x "  first" first-grid "  last" last-grid]
 		either no-sun sun [
-			append my-draw compose [line-cap flat line (as-pair vline-x sun-y) (as-pair vline-x sun-y + default-line-heigth)]
-			temp-y: sun-y + default-line-heigth + word-gap
+			y: calculate-y sun-grid-y
+			append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-height)]
+			temp-y: y + default-line-height + word-gap
 			sun-x: vline-x - half-word-width
 			foreach w sun [
 				append my-draw reduce ['text as-pair sun-x temp-y (to string! w)]
-				temp-y: temp-y + word-heigth + word-gap
-			]			
+				temp-y: temp-y + word-height + word-gap
+			]
+			last-grid: grid-x
 			; 当前格子后移一格
-			grid: grid + 1
-			last-grid: grid
+			grid-x: grid-x + 1
+			
 		] [
-			result: draw-all sun grid sun-y tab
-			grid: result/2
+			result: draw-all sun grid-x sun-grid-y tab sun-grid-y
+			height: result/6 + 1
+			grid-x: result/2
 			if i = 1 [ 
 				; 如果第一个子节点递归返回的，重置first grid为此父节点的格子
-				first-grid: first-grid + ((grid - 1 - first-grid) / 2)
+				first-grid: calculate-middle-grid first-grid grid-x
 			]
 
 			tab: result/4
 			last-grid: result/5
 		]
 		; 间隔一格空白
-		grid: grid + 1
+		grid-x: grid-x + 1
 		tab: skip tab 2
 		i: i + 1
 	]
 	; 去掉for循环里多加的最后一个空格
-	grid: grid - 1
+	grid-x: grid-x - 1
 	
 	; 上短竖线
-	father-grid: (first-grid + ((last-grid - first-grid) / 2))
+	father-grid: calculate-middle-grid first-grid last-grid
 	vline-x: calculate-x father-grid
-	print [tab "函数结束" user-name "cur" grid "  first" first-grid "  last" last-grid "  middle" father-grid "  x" vline-x]
-	if y > 10 [
-		append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-heigth)]
+	y: calculate-y grid-y
+	print [tab "函数结束" username "cur" grid-x "  first" first-grid "  last" last-grid "  middle" father-grid "  x" vline-x "  y" y]
+	if grid-y > 1 [
+		append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-height)]
 	]
-	y: y + default-line-heigth + word-gap
+	y: y + default-line-height + word-gap
 	; 名字
 	x: vline-x - half-word-width
-	foreach w user-name [
+	foreach w username [
 		append my-draw reduce ['text as-pair x y (to string! w)]
-		y: y + word-heigth + word-gap
+		y: y + word-height + word-gap
 	]
+	y: y - word-gap
 	; 下短竖线
-	append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-heigth)]
-	y: y + default-line-heigth
+	append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-height)]
+	y: y + default-line-height
 	; 横线
 	hline-start: calculate-x first-grid
 	hline-end: calculate-x last-grid
 	append my-draw compose [line-cap flat line (as-pair hline-start y) (as-pair hline-end y)]
 	tab: skip tab 2
-	return reduce [none grid y tab father-grid]
+	grid-y: grid-y + 1
+	return reduce [username grid-x grid-y tab father-grid height]
 ]
 
-draw-all "马中新" 1 10 ""
-width: (gap * select node-grid "马中新") + (edge * 2)
+result: draw-all "马中新" 1 1 "" 1
+
+width: (gap * result/2) + (edge * 2)
+height: (calculate-y result/6 + 1) + (edge * 2)
 save %family-tree.png draw as-pair width height my-draw
