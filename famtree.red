@@ -75,20 +75,6 @@ foreach node nodes [
 append my-draw compose [font small]
 append my-draw compose [line-width (default-line-width) pen blue]
 
-; 计算每一个节点所占的格子数，父节点所占的格子数等于其所有子节点占用的格子数的和
-find-grid: function [user-name grid] [
-	user: select users user-name
-	if user = none [ return reduce [none grid] ]
-
-	foreach sun user/suns [
-		boundary: find-grid sun 1
-		grid: grid + boundary/2 + 1
-		put node-grid sun boundary/2
-	]
-	put node-grid user-name grid - 2
-	return reduce [user-name grid - 2]
-]
-
 no-sun: function [user-name] [
 	user: select users user-name
 	either user = none [true] [false]
@@ -120,10 +106,6 @@ draw-all: function [user-name grid y tab] [
 	append tab " "
 	print [tab "函数开始" user-name "grid:" grid "y:" y]
 	user: select users user-name
-	if user = none [
-		return reduce [user-name grid y tab]
-	]
-	father-grid: select node-grid user-name
 	
 	sun-y: y
 	foreach w user-name [
@@ -138,9 +120,7 @@ draw-all: function [user-name grid y tab] [
 		append tab " "
 		append tab " "
 		vline-x: calculate-x grid
-		
-		print [tab "foreach" sun grid ]
-		
+		print [tab "foreach" sun " cur" grid  "  first" first-grid "  last" last-grid]
 		either no-sun sun [
 			append my-draw compose [line-cap flat line (as-pair vline-x sun-y) (as-pair vline-x sun-y + default-line-heigth)]
 			temp-y: sun-y + default-line-heigth + word-gap
@@ -148,19 +128,22 @@ draw-all: function [user-name grid y tab] [
 			foreach w sun [
 				append my-draw reduce ['text as-pair sun-x temp-y (to string! w)]
 				temp-y: temp-y + word-heigth + word-gap
-			]
+			]			
 			; 当前格子后移一格
 			grid: grid + 1
+			last-grid: grid
 		] [
 			result: draw-all sun grid sun-y tab
 			grid: result/2
+			if i = 1 [ 
+				; 如果第一个子节点递归返回的，重置first grid为此父节点的格子
+				first-grid: first-grid + ((grid - 1 - first-grid) / 2)
+			]
+
 			tab: result/4
+			last-grid: result/5
 		]
-		sun-grid: select node-grid sun
-		; 子代中最后一格等于当前的格子减去它所占的格子的一半
-		last-grid: grid - middle sun-grid
-		if i = 1 [ first-grid: last-grid]
-		; 间隔一格
+		; 间隔一格空白
 		grid: grid + 1
 		tab: skip tab 2
 		i: i + 1
@@ -169,8 +152,9 @@ draw-all: function [user-name grid y tab] [
 	grid: grid - 1
 	
 	; 上短竖线
-	vline-x: calculate-x (grid - middle father-grid)	
-	print [tab "函数结束" user-name "cur" grid "f" first-grid "l" last-grid ":" (grid - middle father-grid) vline-x]
+	father-grid: (first-grid + ((last-grid - first-grid) / 2))
+	vline-x: calculate-x father-grid
+	print [tab "函数结束" user-name "cur" grid "  first" first-grid "  last" last-grid "  middle" father-grid "  x" vline-x]
 	if y > 10 [
 		append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-heigth)]
 	]
@@ -189,10 +173,9 @@ draw-all: function [user-name grid y tab] [
 	hline-end: calculate-x last-grid
 	append my-draw compose [line-cap flat line (as-pair hline-start y) (as-pair hline-end y)]
 	tab: skip tab 2
-	return reduce [none grid y tab]
+	return reduce [none grid y tab father-grid]
 ]
 
-find-grid "马中新" 1
 draw-all "马中新" 1 10 ""
 width: (gap * select node-grid "马中新") + (edge * 2)
 save %family-tree.png draw as-pair width height my-draw
