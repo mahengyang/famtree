@@ -16,46 +16,46 @@ default-line-height: 10
 default-line-width: 2
 small: make font! [size: 20 name: "Consolas" style: 'bold]
 
-node1: object [
-	father: "马中新"
-	suns: ["马端吉" "马端祥" "马端如" "马端意" "马端少"]
-	generation: "中"
+node1: [
+	父: "马中新"
+	子: ["马端吉" "马端祥" "马端如" "马端意" "马端少"]
+	字: "中"
 ]
 
-node2: object [
-	father: "马端如"
-	suns: ["马泰心" "马泰德" "马泰功" "马泰名"]
-	generation: "端"
+node2: [
+	父: "马端如"
+	子: ["马泰心" "马泰德" "马泰功" "马泰名"]
+	字: "端"
 ]
 
-node3: object [
-	father: "马端少"
-	suns: ["马泰明" "马泰光" "马泰亮"]
-	generation: "端"
+node3: [
+	父: "马端少"
+	子: ["马泰明" "马泰光" "马泰亮"]
+	字: "端"
 ]
 
-node4: object [
-	father: "马泰光"
-	suns: ["马守运" "马守伦" "马守礼"]
-	generation: "泰"
+node4: [
+	父: "马泰光"
+	子: ["马守运" "马守伦" "马守礼"]
+	字: "泰"
 ]
 
-node5: object [
-	father: "马泰亮"
-	suns: ["马守清"]
-	generation: "泰"
+node5: [
+	父: "马泰亮"
+	子: ["马守清"]
+	字: "泰"
 ]
 
-node6: object [
-	father: "马守运"
-	suns: ["马文德" "马文才"]
-	generation: "守"
+node6: [
+	父: "马守运"
+	子: ["马文德" "马文才"]
+	字: "守"
 ]
 
-node7: object [
-	father: "马守礼"
-	suns: ["马文孝" "马文义" "马文鸿" "马 超" "马 越"]
-	generation: "守"
+node7: [
+	父: "马守礼"
+	子: ["马文孝" "马文义" "马文鸿" "马 超" "马 越"]
+	字: "守"
 ]
 
 nodes: reduce [node1 node2 node3 node4 node5 node6 node7]
@@ -67,7 +67,7 @@ my-draw: make block! 1
 node-grid: make map! []
 
 foreach node nodes [
-	put users node/father node
+	put users node/父 node
 ]
 
 append my-draw compose [font small]
@@ -122,7 +122,7 @@ draw-all: function [username grid-x grid-y height] [
 	last-grid: grid-x
 	append tab "  "
 	i: 1
-	foreach sun user/suns [
+	foreach sun user/子 [
 		vline-x: calculate-x grid-x
 		print [tab "=" sun " x:" grid-x "  y:" grid-y "  first" first-grid "  last" last-grid ]
 		either no-sun sun [
