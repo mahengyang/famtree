@@ -110,21 +110,21 @@ calculate-middle-grid: function [left-grid right-grid] [
 ; username 节点名字
 ; grid-x x格子数
 ; grid-y y格子数
-; tab 日志缩进
 ; height 高度
-draw-all: function [username grid-x grid-y tab height] [
-	append tab "  "
-	print [tab "函数开始" username "grid:" grid-x "y:" grid-y]
+draw-all: function [username grid-x grid-y height] [
+	tab: copy ""
+	loop (grid-y - 1) * 3 [ append tab " " ]
+	print [tab ">>" username "x:" grid-x "  y:" grid-y]
 	user: select users username
 	
 	sun-grid-y: grid-y + 1
 	first-grid: grid-x
 	last-grid: grid-x
+	append tab "  "
 	i: 1
 	foreach sun user/suns [
-		append tab "  "
 		vline-x: calculate-x grid-x
-		print [tab "foreach" sun " cur" grid-x "  first" first-grid "  last" last-grid]
+		print [tab "=" sun " x:" grid-x "  y:" grid-y "  first" first-grid "  last" last-grid ]
 		either no-sun sun [
 			y: calculate-y sun-grid-y
 			append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-height)]
@@ -139,30 +139,27 @@ draw-all: function [username grid-x grid-y tab height] [
 			grid-x: grid-x + 1
 			
 		] [
-			result: draw-all sun grid-x sun-grid-y tab sun-grid-y
-			height: result/6 + 1
+			result: draw-all sun grid-x sun-grid-y sun-grid-y
+			height: result/5 + 1
 			grid-x: result/2
 			if i = 1 [ 
 				; 如果第一个子节点递归返回的，重置first grid为此父节点的格子
 				first-grid: calculate-middle-grid first-grid grid-x
 			]
-
-			tab: result/4
-			last-grid: result/5
+			last-grid: result/4
 		]
 		; 间隔一格空白
 		grid-x: grid-x + 1
-		tab: skip tab 2
 		i: i + 1
 	]
 	; 去掉for循环里多加的最后一个空格
 	grid-x: grid-x - 1
-	
+	tab: skip tab 2
 	; 上短竖线
 	father-grid: calculate-middle-grid first-grid last-grid
 	vline-x: calculate-x father-grid
 	y: calculate-y grid-y
-	print [tab "函数结束" username "cur" grid-x "  first" first-grid "  last" last-grid "  middle" father-grid "  x" vline-x "  y" y]
+	print [tab "<<" username "cur" grid-x "  first" first-grid "  last" last-grid "  middle" father-grid "  x" vline-x "  y" y]
 	if grid-y > 1 [
 		append my-draw compose [line-cap flat line (as-pair vline-x y) (as-pair vline-x y + default-line-height)]
 	]
@@ -181,13 +178,12 @@ draw-all: function [username grid-x grid-y tab height] [
 	hline-start: calculate-x first-grid
 	hline-end: calculate-x last-grid
 	append my-draw compose [line-cap flat line (as-pair hline-start y) (as-pair hline-end y)]
-	tab: skip tab 2
 	grid-y: grid-y + 1
-	return reduce [username grid-x grid-y tab father-grid height]
+	return reduce [username grid-x grid-y father-grid height]
 ]
 
-result: draw-all "马中新" 1 1 "" 1
+result: draw-all "马中新" 1 1 1
 
 width: (gap * result/2) + (edge * 2)
-height: (calculate-y result/6 + 1) + (edge * 2)
+height: (calculate-y result/5 + 1) + (edge * 2)
 save %family-tree.png draw as-pair width height my-draw
