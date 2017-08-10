@@ -73,13 +73,12 @@ foreach node nodes [
 append my-draw compose [font small]
 append my-draw compose [line-width (default-line-width) pen blue]
 
-no-sun: function [username] [
+no-sun: function ["检查此人有没有子代" username "姓名"] [
 	user: select users username
 	either user = none [true] [false]
 ]
 
-; 计算中间的格子
-middle: function [grid] [
+middle: function ["计算中间的格子" grid "格子序号，从左往右数"] [
 	remainder: grid % 2
 	middle: grid / 2
 	either remainder = 0 
@@ -87,31 +86,37 @@ middle: function [grid] [
 		[middle + 1]
 ]
 
-calculate-x: function [grid] [
+calculate-x: function ["根据格子编号计算x左边" grid "x轴方向的格子编号"] [
 	grid * gap - half-word-width + edge
 ]
 
-; 计算竖向格子的上边界坐标 上下两根竖线，字间距加字高，再加边距
-; grid-y 距离上边界的格子数
-calculate-y: function [grid-y] [
+calculate-y: function [
+	"计算竖向格子的上边界坐标 上下两根竖线，字间距加字高，再加边距" 
+	grid-y "距离上边界的格子数"
+] [
 	(grid-y - 1) * calculate-y-grid-height + edge
 ]
-; 计算竖向格子的长度
-calculate-y-grid-height: function [] [
+
+calculate-y-grid-height: function ["计算竖向格子的长度"] [
 	word-count: 3
 	(default-line-height * 2) + ((word-gap + word-height) * word-count)
 ]
 
-calculate-middle-grid: function [left-grid right-grid] [
+calculate-middle-grid: function [
+	"计算中间的格子"
+	left-grid "最左边的格子"
+	right-grid "最右边的格子"
+] [
 	left-grid + ((right-grid - left-grid) / 2)
 ]
 
-; 先画后代，再画父代
-; username 节点名字
-; grid-x x格子数
-; grid-y y格子数
-; height 高度
-draw-all: function [username grid-x grid-y height] [
+draw-all: function [
+	"绘制指定用户及其所有后代"
+	username "姓名"
+	grid-x "x格子序号"
+	grid-y "y格子序号"
+	height "函数递归调用次数"
+] [
 	tab: copy ""
 	loop (grid-y - 1) * 3 [ append tab " " ]
 	print [tab ">>" username "x:" grid-x "  y:" grid-y]
