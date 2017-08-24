@@ -16,39 +16,40 @@ default-line-height: 10
 default-line-width: 2
 small: make font! [size: 20 name: "Consolas" style: 'bold]
 
+users: #() ; 存储父名字到后代的映射，名字作为主键，方便查找
+ancestor: none ; 族谱中第一个祖先
+
 args: system/options/args
 if empty? args [print "请指定数据文件" quit]
-nodes: []
-foreach line read/lines to-file args/1 [
+
+foreach line read/lines (to-file args/1) [
 	if empty? line [continue]
 	tmp: copy []
 	tmp-suns: copy []
 	i: 1
-	foreach item split line " " [
+	foreach item split line " " [ ; 按照空格分隔，第一位是辈字，第二位是父名字，剩下的是子代
 		either i = 1 [
 			append tmp copy item
 		][
 			new-name: copy ""
-			if (length? item) = 1 [append new-name reduce [" " item " "]] ; 一个字名字两头加空格变成三个字
-			if (length? item) = 2 [append new-name reduce [item/1 " " item/2]] ; 两个字名字中间加个空格变成三个字
-			if (length? item) = 3 [new-name: item]
+			switch/default length? item [
+				1 [append new-name reduce [" " item " "]] ; 一个字名字两头加空格变成三个字
+				2 [append new-name reduce [item/1 " " item/2]] ; 两个字名字中间加个空格变成三个字
+			][
+				new-name: item
+			]
 			either i = 2 [append tmp new-name] [append tmp-suns new-name]
 		]
 		i: i + 1
 	]
 	if not empty? tmp-suns [ append/only tmp copy tmp-suns ]
-	append/only nodes copy tmp
+	put users tmp/2 copy tmp
+	if ancestor = none [ancestor: tmp/2]
 ]
-print nodes
-; 名字作为主键，方便查找
-users: #()
-genarations: #()
+print users
+
 ; 画板
 my-draw: []
-
-foreach node nodes [
-	put users node/2 node
-]
 
 append my-draw compose [font small]
 append my-draw compose [line-width (default-line-width) pen black]
@@ -80,6 +81,7 @@ calculate-middle-grid: function [
 	left-grid + ((right-grid - left-grid) / 2)
 ]
 
+genarations: #() ; 已经画过的辈字
 draw-generation: function [ "画辈字" grid-y generation] [
 	is-draw: select genarations generation
 	if is-draw <> none [ return 1 ]
@@ -122,15 +124,13 @@ draw-all: function [
 				]
 				last-grid: grid-x
 				grid-x: grid-x + 1 ; 当前格子后移一格
-			] [
+			] [ ; 如果有后代，递归，先画后代
 				result: draw-all sun grid-x sun-grid-y height
 				grid-x: result/2
 				last-grid: result/3 ;result/3 代表递归返回的父节点的grid-x
 				height: result/4
-				if i = 1 [
-					; 如果第一个子节点递归返回的，重置first grid为此父节点的格子
-					first-grid: last-grid
-				]
+				; 如果第一个子节点递归返回的，重置first grid为此父节点的格子
+				if i = 1 [ first-grid: last-grid ]
 			]
 			grid-x: grid-x + 1 ; 间隔一格空白
 			i: i + 1
@@ -169,7 +169,7 @@ draw-all: function [
 	return reduce [username grid-x father-grid height]
 ]
 
-result: draw-all nodes/1/2 1 1 1
+result: draw-all ancestor 1 1 1
 width: (gap * result/2) + (edge * 3)
 height: (calculate-y result/4) + (edge * 2)
 print ["图片尺寸" width "x" height]
