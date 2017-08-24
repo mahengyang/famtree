@@ -16,8 +16,30 @@ default-line-height: 10
 default-line-width: 2
 small: make font! [size: 20 name: "Consolas" style: 'bold]
 
-#include %data.red
-
+args: system/options/args
+if empty? args [print "请指定数据文件" quit]
+nodes: []
+foreach line read/lines to-file args/1 [
+	if empty? line [continue]
+	tmp: copy []
+	tmp-suns: copy []
+	i: 1
+	foreach item split line " " [
+		either i = 1 [
+			append tmp copy item
+		][
+			new-name: copy ""
+			if (length? item) = 1 [append new-name reduce [" " item " "]] ; 一个字名字两头加空格变成三个字
+			if (length? item) = 2 [append new-name reduce [item/1 " " item/2]] ; 两个字名字中间加个空格变成三个字
+			if (length? item) = 3 [new-name: item]
+			either i = 2 [append tmp new-name] [append tmp-suns new-name]
+		]
+		i: i + 1
+	]
+	if not empty? tmp-suns [ append/only tmp copy tmp-suns ]
+	append/only nodes copy tmp
+]
+print nodes
 ; 名字作为主键，方便查找
 users: #()
 genarations: #()
